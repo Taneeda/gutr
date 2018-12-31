@@ -6,7 +6,6 @@ This is a small windows application to call the `SUITE`'s available in the Test-
 ## Getting Started
 Just download the [executable](https://github.com/Taneeda/gutr/blob/master/greatestUnitTestRunner.exe) and start it. After start, the program await for a test runner to drop. The dropped file will be executed with the AutoIt [Run](https://www.autoitscript.com/autoit3/docs/functions/Run.htm)-Function and the `-h` parameter, to check whether the dropped file is an GREATEST Test-Runner.
 
-![Startup](https://github.com/Taneeda/gutr/blob/master/img/start.png)
 ![DragAndDrop](https://github.com/Taneeda/gutr/blob/master/img/dragDrop.png)
 ![LoadedSUITEs](https://github.com/Taneeda/gutr/blob/master/img/SUITEsLoaded.png)
 ![ReportExample](https://github.com/Taneeda/gutr/blob/master/img/reportExample.png)
