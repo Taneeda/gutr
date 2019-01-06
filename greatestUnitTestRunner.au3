@@ -1,9 +1,11 @@
 #Region ;**** Directives created by AutoIt3Wrapper_GUI ****
 #AutoIt3Wrapper_Icon=greatestUnitTestRunner.ico
 #AutoIt3Wrapper_Outfile=greatestUnitTestRunner.exe
+#AutoIt3Wrapper_Outfile_x64=greatestUnitTestRunner_x64.exe
+#AutoIt3Wrapper_Compile_Both=y
+#AutoIt3Wrapper_UseX64=y
 #AutoIt3Wrapper_Res_Description=Tool to manage and execute SUITE/TEST of a given test-runner, created by the Greatest Unit-Test Framework
-#AutoIt3Wrapper_Res_Fileversion=0.2.0.0
-#AutoIt3Wrapper_Res_Fileversion_AutoIncrement=n
+#AutoIt3Wrapper_Res_Fileversion=0.3.0.0
 #AutoIt3Wrapper_Res_requestedExecutionLevel=asInvoker
 #EndRegion ;**** Directives created by AutoIt3Wrapper_GUI ****
 #cs ***************************************************************************************************************************
@@ -15,7 +17,7 @@ Parameter:
 Problems:
 
 Refactor:
-	- Complete Code to minimize
+	- Refactor complete code to minimize
 	- Reporting with CSS|HTML templates
 
 Ideas/TODO:
@@ -31,6 +33,12 @@ Ideas/TODO:
 		- Level: Execution (interesting for user, general information)
 
 History (current on top):
+	v0.3.0.0	- Change: Comment-out of "_WinAPI_ChangeWindowMessageFilterEx()" because of Avira AntiVir warning
+				- Change: Removed external "TreeStateViewLib.au3) because of no tristate usage at the moment
+				- Change: Replaced string "All" with "SRE" when checkbox for SRE is checked
+				- Change: "-" will be shown instead of "0" when no suite and no SRE checkbox are checked
+				- Add: x64 compile options
+				- Add: Single click on treeview item toggles its checked state
 	v0.2.0.0	- Change: Refactoring to use "TristateTreeViewLib" UDF instead of "GuiTreeViewEx" UDF --> Resolves previous
 					problem with GuiTreeViewEx (Checkbox always iterates over TriState, when just shall be checked/unchecked
 					(TriState only for parent checkboxes when not all child checkboxes are selected))
@@ -52,18 +60,13 @@ History (current on top):
 				- Add: Unify results -> Greatest 1.4.0 checks for Suite name by "starts-with" instead of "equals", which
 					   results in execution of all SUITEs starting with "str1" also when name is "str1blabla"
 #ce ***************************************************************************************************************************
-#include <APISysConstants.au3>
-#include <FileConstants.au3>
-#include <TreeViewConstants.au3>
 #include <File.au3>
 #include <Array.au3>
 #include <GUIConstants.au3>
 #include <GUIConstantsEx.au3>
 #include <GuiTreeView.au3>
-#include <WindowsConstants.au3>
-#include <WinAPISys.au3>
+#include <WinAPISysWin.au3>
 #include <GuiStatusBar.au3>
-#include "TristateTreeViewLib.au3" ;Just to be prepared for the future, in case of adding TEST checkings
 OnAutoItExitRegister('OnAutoItExit')
 
 #cs**************************************************************************************************************
@@ -109,10 +112,17 @@ Local $bAnySuiteChecked = False
 #ce**************************************************************************************************************
 createGuiToDropRunner()
 
-;~ ; Just for testing
+; Just for testing
 ;~ $arrCmdLine[0] = 1
 ;~ $arrCmdLine[1] = "C:\Users\Taneeda\Google Drive\dev\Au3\GreatestUnitTestRunner\mwccm_unittesting.exe"
 ;~ dropFiles($arrCmdLine)
+
+; Processing of command line arguments (tbd)
+;~ If 1 == $CmdLine[0] Then
+;~ 	$arrCmdLine[0] = 1
+;~ 	$arrCmdLine[1] = $CmdLine[1]
+;~ 	dropFiles($arrCmdLine)
+;~ EndIf
 
 ; Regular working code
 GUISetState(@SW_SHOW, $hForm)
@@ -124,7 +134,13 @@ While True
 	; In case of checked SUITE, uncheck "single runner" checkbox
 	$iTotalStep = 0
 	For $i In $arrTvSuiteItems
-		If $GUI_CHECKED == MyCtrlGetItemState($tvSuiteTests, $i) Then
+		; Toggle state on click
+		If $idGuiMsg == $i Then
+			_GUICtrlTreeView_SetChecked($tvSuiteTests, $i, Not _GUICtrlTreeView_GetChecked($tvSuiteTests, $i))
+		EndIf
+
+		; Check for checked items
+		If _GUICtrlTreeView_GetChecked($tvSuiteTests, $i) Then
 			$iTotalStep += 1
 			$bAnySuiteChecked = True
 			If $idGuiMsg == $i Then
@@ -132,6 +148,9 @@ While True
 			EndIf
 		EndIf
 	Next
+	If 0 == $iTotalStep Then
+		$iTotalStep = "-" ; To show char in statusbar instead of 0
+	EndIf
 	If $bCbAdj And $GUI_CHECKED == GUICtrlRead($cbSingleRunnerExec) Then
 		GUICtrlSetState($cbSingleRunnerExec, $GUI_UNCHECKED)
 	EndIf
@@ -233,7 +252,7 @@ EndFunc
 
 Func setStatusBarInfoBySingleRunnerExec($bIsCheckBoxSREChecked)
 	If $bIsCheckBoxSREChecked Then
-		$sText = "All"
+		$sText = "SRE"
 		If 0 <> StringCompare(_GUICtrlStatusBar_GetText($sbStatusbar, $eSB_PART_TOTAL_STEP), $sText) Then
 			_GUICtrlStatusBar_SetText($sbStatusbar, $sText, $eSB_PART_TOTAL_STEP)
 		EndIf
@@ -247,14 +266,14 @@ EndFunc
 Func checkAll()
 	GUICtrlSetState($cbSingleRunnerExec, $GUI_UNCHECKED)
 	For $i In $arrTvSuiteItems
-		MyCtrlSetItemState($tvSuiteTests, $i, $GUI_CHECKED)
+		_GUICtrlTreeView_SetChecked($tvSuiteTests, $i, True)
 	Next
 EndFunc
 
 Func checkNone()
 	GUICtrlSetState($cbSingleRunnerExec, $GUI_CHECKED)
 	For $i In $arrTvSuiteItems
-		MyCtrlSetItemState($tvSuiteTests, $i, $GUI_UNCHECKED)
+		_GUICtrlTreeView_SetChecked($tvSuiteTests, $i, False)
 	Next
 EndFunc
 
@@ -326,10 +345,10 @@ Func runnerExec()
 
 	; Get all marked SUITEs
 	For $i In $arrTvSuiteItems
-		If 		$GUI_CHECKED == MyCtrlGetItemState($tvSuiteTests, $i) _
+		If 		_GUICtrlTreeView_GetChecked($tvSuiteTests, $i) _
 			Or	$GUI_CHECKED == GUICtrlRead($cbSingleRunnerExec) _
 		Then
-			_ArrayAdd($arrSuitesExec, GUICtrlRead($i, 1))
+			_ArrayAdd($arrSuitesExec, GUICtrlRead($i, True)) ; Returns text of the treeviewitem
 		EndIf
 	Next
 
@@ -715,10 +734,11 @@ Func createGuiToDropRunner()
 	$lblDropIdText = GUICtrlCreateLabel($lblDropText, $guiDropWidth/2-$lblDropWidth/2, $guiDropHeight/2-$lblDropHeight/2, $lblDropWidth, $lblDropHeight)
 	GUICtrlSetBkColor(-1, $GUI_BKCOLOR_TRANSPARENT)
 
-	If IsAdmin() Then
-		_WinAPI_ChangeWindowMessageFilterEx($g_hLabel, $WM_COPYGLOBALDATA, $MSGFLT_ALLOW)
-		_WinAPI_ChangeWindowMessageFilterEx($g_hLabel, $WM_DROPFILES, $MSGFLT_ALLOW)
-	EndIf
+	; The following statements cause an Avira AntiVir warning, don't know why...
+;~ 	If IsAdmin() Then
+;~ 		_WinAPI_ChangeWindowMessageFilterEx($g_hLabel, $WM_COPYGLOBALDATA, $MSGFLT_ALLOW)
+;~ 		_WinAPI_ChangeWindowMessageFilterEx($g_hLabel, $WM_DROPFILES, $MSGFLT_ALLOW)
+;~ 	EndIf
 
 	; Register label window proc
 	Global $g_hDll = DllCallbackRegister('_WinProc', 'ptr', 'hwnd;uint;wparam;lparam')
@@ -728,18 +748,11 @@ Func createGuiToDropRunner()
 	_WinAPI_DragAcceptFiles($g_hLabel)
 EndFunc
 
-Func deleteGuiToDropRunner()
-;~ 	GUICtrlDelete($lblDropArea)
-;~ 	GUICtrlDelete($lblDropIdText)
-EndFunc
-
 Func dropFiles($sFileList)
 	If 1 == $sFileList[0] Then
 		ConsoleWrite("Dropped path: """ & $sFileList[1] & """" & @CRLF)
 
 		If bIsGreatestTestRunner($sFileList[1]) Then
-			deleteGuiToDropRunner()
-
 			If 0 == $tvSuiteTests Then
 				WinMove($sTitle, "", @DesktopWidth/2-$guiSuiteTestWidth/2, @DesktopHeight/2-$guiSuiteTestHeight/2, $guiSuiteTestWidth, $guiSuiteTestHeight+23)
 
