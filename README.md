@@ -12,5 +12,3 @@ Just download the [executable](https://github.com/Taneeda/gutr/blob/master/great
 
 ## Compile yourself
 Simply download and install [AutoIt](https://www.autoitscript.com/site/) and compile the [script-file](https://github.com/Taneeda/gutr/blob/master/greatestUnitTestRunner.au3) with it.
-
-:zap: **Note:** I'm not sure why, but currently I get a virus warning by Avira AntiVir (not tested with other AntiVir software) and the temporary compilation file is moved to quarantine.
