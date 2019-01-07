@@ -33,6 +33,7 @@ Ideas/TODO:
 		- Level: Execution (interesting for user, general information)
 
 History (current on top):
+	v0.4.0.0	- Add: Command line arguments to allow execution automation (WIP)
 	v0.3.0.0	- Change: Comment-out of "_WinAPI_ChangeWindowMessageFilterEx()" because of Avira AntiVir warning
 				- Change: Removed external "TreeStateViewLib.au3) because of no tristate usage at the moment
 				- Change: Replaced string "All" with "SRE" when checkbox for SRE is checked
@@ -110,104 +111,104 @@ Local $bAnySuiteChecked = False
 #cs**************************************************************************************************************
 * Processing
 #ce**************************************************************************************************************
+; At the beginning, because GUI elements are used at command line processing too (checkboxes for SUITEs)
 createGuiToDropRunner()
 
-; Just for testing
-;~ $arrCmdLine[0] = 1
-;~ $arrCmdLine[1] = "C:\Users\Taneeda\Google Drive\dev\Au3\GreatestUnitTestRunner\mwccm_unittesting.exe"
-;~ dropFiles($arrCmdLine)
-
 ; Processing of command line arguments (tbd)
-;~ If 1 == $CmdLine[0] Then
-;~ 	$arrCmdLine[0] = 1
-;~ 	$arrCmdLine[1] = $CmdLine[1]
-;~ 	dropFiles($arrCmdLine)
-;~ EndIf
+If 1 == $CmdLine[0] Then
+	$arrCmdLine[0] = 1
+;~ 	$arrCmdLine[1] = "C:\Users\Taneeda\Google Drive\dev\Au3\GreatestUnitTestRunner\mwccm_unittesting.exe" ; Just for testing
+	$arrCmdLine[1] = $CmdLine[1]
+	dropFiles($arrCmdLine)
+	checkAll()
+	runnerExec()
+	openReport()
+Else
+	; Regular working code
+	GUISetState(@SW_SHOW, $hForm)
+	While True
+		$idGuiMsg = GUIGetMsg()
+		$bCbAdj = False
+		$bAnySuiteChecked = False
 
-; Regular working code
-GUISetState(@SW_SHOW, $hForm)
-While True
-	$idGuiMsg = GUIGetMsg()
-	$bCbAdj = False
-	$bAnySuiteChecked = False
-
-	; In case of checked SUITE, uncheck "single runner" checkbox
-	$iTotalStep = 0
-	For $i In $arrTvSuiteItems
-		; Toggle state on click
-		If $idGuiMsg == $i Then
-			_GUICtrlTreeView_SetChecked($tvSuiteTests, $i, Not _GUICtrlTreeView_GetChecked($tvSuiteTests, $i))
-		EndIf
-
-		; Check for checked items
-		If _GUICtrlTreeView_GetChecked($tvSuiteTests, $i) Then
-			$iTotalStep += 1
-			$bAnySuiteChecked = True
+		; In case of checked SUITE, uncheck "single runner" checkbox
+		$iTotalStep = 0
+		For $i In $arrTvSuiteItems
+			; Toggle state on click
 			If $idGuiMsg == $i Then
-				$bCbAdj = True
+				_GUICtrlTreeView_SetChecked($tvSuiteTests, $i, Not _GUICtrlTreeView_GetChecked($tvSuiteTests, $i))
 			EndIf
-		EndIf
-	Next
-	If 0 == $iTotalStep Then
-		$iTotalStep = "-" ; To show char in statusbar instead of 0
-	EndIf
-	If $bCbAdj And $GUI_CHECKED == GUICtrlRead($cbSingleRunnerExec) Then
-		GUICtrlSetState($cbSingleRunnerExec, $GUI_UNCHECKED)
-	EndIf
-	setStatusBarInfoBySingleRunnerExec(bIsCheckBoxSingleRunnerExecChecked())
 
-	; GUI Elements
-	Switch $idGuiMsg
-		Case $GUI_EVENT_CLOSE
-			ExitLoop
-		Case $btnExec
-			$eGuiState = $eGUI_STATE_EXEC
-		Case $btnCheckAll
-			checkAll()
-		Case $btnCheckNone
-			checkNone()
-		Case $cbSingleRunnerExec
-			; When "single runner" checkbox checked, disable all SUITEs
-			If $GUI_CHECKED == GUICtrlRead($cbSingleRunnerExec) Then
+			; Check for checked items
+			If _GUICtrlTreeView_GetChecked($tvSuiteTests, $i) Then
+				$iTotalStep += 1
+				$bAnySuiteChecked = True
+				If $idGuiMsg == $i Then
+					$bCbAdj = True
+				EndIf
+			EndIf
+		Next
+		If 0 == $iTotalStep Then
+			$iTotalStep = "-" ; To show char in statusbar instead of 0
+		EndIf
+		If $bCbAdj And $GUI_CHECKED == GUICtrlRead($cbSingleRunnerExec) Then
+			GUICtrlSetState($cbSingleRunnerExec, $GUI_UNCHECKED)
+		EndIf
+		setStatusBarInfoBySingleRunnerExec(bIsCheckBoxSingleRunnerExecChecked())
+
+		; GUI Elements
+		Switch $idGuiMsg
+			Case $GUI_EVENT_CLOSE
+				ExitLoop
+			Case $btnExec
+				$eGuiState = $eGUI_STATE_EXEC
+			Case $btnCheckAll
+				checkAll()
+			Case $btnCheckNone
 				checkNone()
-			EndIf
-	EndSwitch
+			Case $cbSingleRunnerExec
+				; When "single runner" checkbox checked, disable all SUITEs
+				If $GUI_CHECKED == GUICtrlRead($cbSingleRunnerExec) Then
+					checkNone()
+				EndIf
+		EndSwitch
 
-	; Exec-Button only available when any SUITE or "Single Runner" checked
-	If(		($bAnySuiteChecked) _
-		Or 	($GUI_CHECKED == GUICtrlRead($cbSingleRunnerExec)) _
-	) Then
-		If $GUI_DISABLE == BitAND(GUICtrlGetState($btnExec), $GUI_DISABLE) Then
-			GUICtrlSetState($btnExec, $GUI_ENABLE)
+		; Exec-Button only available when any SUITE or "Single Runner" checked
+		If(		($bAnySuiteChecked) _
+			Or 	($GUI_CHECKED == GUICtrlRead($cbSingleRunnerExec)) _
+		) Then
+			If $GUI_DISABLE == BitAND(GUICtrlGetState($btnExec), $GUI_DISABLE) Then
+				GUICtrlSetState($btnExec, $GUI_ENABLE)
+			EndIf
+		Else
+			If $GUI_ENABLE == BitAND(GUICtrlGetState($btnExec), $GUI_ENABLE) Then
+				GUICtrlSetState($btnExec, $GUI_DISABLE)
+			EndIf
 		EndIf
-	Else
-		If $GUI_ENABLE == BitAND(GUICtrlGetState($btnExec), $GUI_ENABLE) Then
-			GUICtrlSetState($btnExec, $GUI_DISABLE)
-		EndIf
-	EndIf
 
-	; Update StatusBar / GUI-State
-	Switch $eGuiState
-		Case $eGUI_STATE_READY
-			GUICtrlSetData($prgProgress, 0)
+		; Update StatusBar / GUI-State
+		Switch $eGuiState
+			Case $eGUI_STATE_READY
+				GUICtrlSetData($prgProgress, 0)
 
-			$sText = "Ready"
-			If 0 <> StringCompare(_GUICtrlStatusBar_GetText($sbStatusbar, $eSB_PART_STATE), $sText) Then
-				_GUICtrlStatusBar_SetText($sbStatusbar, $sText, $eSB_PART_STATE)
-			EndIf
-			$sText = "---"
-			If 0 <> StringCompare(_GUICtrlStatusBar_GetText($sbStatusbar, $eSB_PART_CURRENT_STEP), $sText) Then
-				_GUICtrlStatusBar_SetText($sbStatusbar, $sText, $eSB_PART_CURRENT_STEP)
-			EndIf
-		Case $eGUI_STATE_EXEC
-			$sText = "Processing..."
-			If 0 <> StringCompare(_GUICtrlStatusBar_GetText($sbStatusbar, $eSB_PART_STATE), $sText) Then
-				_GUICtrlStatusBar_SetText($sbStatusbar, $sText, $eSB_PART_STATE)
-			EndIf
-			runnerExec()
-			$eGuiState = $eGUI_STATE_READY
-	EndSwitch
-WEnd
+				$sText = "Ready"
+				If 0 <> StringCompare(_GUICtrlStatusBar_GetText($sbStatusbar, $eSB_PART_STATE), $sText) Then
+					_GUICtrlStatusBar_SetText($sbStatusbar, $sText, $eSB_PART_STATE)
+				EndIf
+				$sText = "---"
+				If 0 <> StringCompare(_GUICtrlStatusBar_GetText($sbStatusbar, $eSB_PART_CURRENT_STEP), $sText) Then
+					_GUICtrlStatusBar_SetText($sbStatusbar, $sText, $eSB_PART_CURRENT_STEP)
+				EndIf
+			Case $eGUI_STATE_EXEC
+				$sText = "Processing..."
+				If 0 <> StringCompare(_GUICtrlStatusBar_GetText($sbStatusbar, $eSB_PART_STATE), $sText) Then
+					_GUICtrlStatusBar_SetText($sbStatusbar, $sText, $eSB_PART_STATE)
+				EndIf
+				runnerExec()
+				$eGuiState = $eGUI_STATE_READY
+		EndSwitch
+	WEnd
+EndIf
 
 #cs**************************************************************************************************************
 * Functions
@@ -651,8 +652,12 @@ Func runnerExec()
 	FileWrite($fh, $sReport)
 	FileClose($fh)
 	If WinActive($sTitle) And $GUI_CHECKED == GUICtrlRead($cbOpenReportWhenFinished) Then
-		ShellExecute($sFileGreatestTestReport)
+		openReport()
 	EndIf
+EndFunc
+
+Func openReport()
+	ShellExecute($sFileGreatestTestReport)
 EndFunc
 
 Func getSuiteTestTree($sFileRunner)
