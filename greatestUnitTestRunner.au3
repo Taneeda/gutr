@@ -2,8 +2,8 @@
 #AutoIt3Wrapper_Icon=greatestUnitTestRunner.ico
 #AutoIt3Wrapper_Outfile=greatestUnitTestRunner.exe
 #AutoIt3Wrapper_Outfile_x64=greatestUnitTestRunner_x64.exe
-#AutoIt3Wrapper_Compile_Both=y
-#AutoIt3Wrapper_UseX64=y
+#AutoIt3Wrapper_Compile_Both=n
+#AutoIt3Wrapper_UseX64=n
 #AutoIt3Wrapper_Res_Description=Tool to manage and execute SUITE/TEST of a given test-runner, created by the Greatest Unit-Test Framework
 #AutoIt3Wrapper_Res_Fileversion=0.3.0.0
 #AutoIt3Wrapper_Res_requestedExecutionLevel=asInvoker
@@ -31,6 +31,14 @@ Ideas/TODO:
 	- Log file(s) (usable to see progress, debugging, ...)
 		- Level: Debug (mainly interesting for developer, all necessary information, technical information)
 		- Level: Execution (interesting for user, general information)
+	- IDE integration --> configuration how to execute tests, for example:
+		- onsave 	Compile unit-test runner and execute it after file save
+		- onexec	Compile unit-test runner and execute it after user command (from IDE, command line, ...)
+		... Related to commands above:
+			- mysuite		Only the SUITE of the current module, where the file is executed
+			- all			All SUITEs ...
+				- sre		... in SRE mode
+				- alone		... All SUITEs in standalone execution one-by-one
 
 History (current on top):
 	v0.4.0.0	- Add: Command line arguments to allow execution automation (WIP)
